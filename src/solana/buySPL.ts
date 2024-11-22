@@ -16,6 +16,8 @@ import {
 
 import { getGlobalAccount } from './swap';
 
+import { PUMP_FEE_RECEIPENT } from '../const';
+
 import BigNumber from 'bignumber.js';
 
 export const createAndBuy = async ({
@@ -123,17 +125,6 @@ export const buy = async ({
   transaction.add(buyTx);
   transaction.add(addPriorityFee);
 
-  try {
-    const result = await connection.simulateTransaction(transaction, [payer]);
-    if (result.value.err) {
-      console.error('simulateTransaction error', result.value.err);
-      return Promise.reject(result.value.err);
-    }
-  } catch (e) {
-    // console.error("simulateTransaction error", e);
-    return Promise.reject(e);
-  }
-
   return await signTxAndSend(connection, transaction, [payer]);
 };
 
@@ -141,29 +132,22 @@ export const sell = async ({
   payer,
   caAddr,
   sellAmount, // 要卖的数量
-  solPrice, // meme单价
-  slippageDecimal, // 滑点
   priorityFeeInSol, // 优先费用
   rpcUrl // rpc地址
 }: {
   payer: Keypair;
   caAddr: string;
   sellAmount: string;
-  solPrice: string;
   priorityFeeInSol: number;
-  slippageDecimal: number;
   rpcUrl: string;
 }) => {
   const connection = new Connection(rpcUrl);
   const provider = new AnchorProvider(connection, new Wallet(payer));
   const sellTx = await sellSPLInstructions(
-    connection,
     provider,
     payer,
     caAddr,
-    sellAmount,
-    solPrice,
-    slippageDecimal
+    sellAmount
   );
 
   const microLamports = priorityFeeInSol * 1_000_000_000;
@@ -174,17 +158,6 @@ export const sell = async ({
   const transaction = new Transaction();
   transaction.add(sellTx);
   transaction.add(addPriorityFee);
-
-  try {
-    const result = await connection.simulateTransaction(transaction, [payer]);
-    if (result.value.err) {
-      console.error(result.value.err);
-      return Promise.reject(result.value.err);
-    }
-  } catch (e) {
-    console.error(e);
-    return Promise.reject(e);
-  }
 
   return await signTxAndSend(connection, transaction, [payer]);
 };
@@ -230,7 +203,7 @@ export const buySPLInstructions = async (
     provider,
     payer.publicKey,
     new PublicKey(caAddr),
-    globalAccount.feeRecipient,
+    PUMP_FEE_RECEIPENT,
     receiveAmount,
     BigInt(Number(maxSolCost) * LAMPORTS_PER_SOL)
   );
@@ -239,30 +212,17 @@ export const buySPLInstructions = async (
 };
 
 export const sellSPLInstructions = async (
-  connection: Connection,
   provider: Provider,
   payer: Keypair,
   caAddr: string, // 要卖的合约地址
   sellAmount: string, // 要卖的数量
-  solPrice: string, // meme单价
-  slippageDecimal: number // 滑点
+  minSolOutput: string = '0.00001' // meme单价
 ) => {
-  const globalAccount = await getGlobalAccount(connection, 'finalized');
-  const minSolOutput = Math.floor(
-    Number(
-      new BigNumber(sellAmount)
-        .div(10 ** 6)
-        .times(solPrice)
-        .times(LAMPORTS_PER_SOL)
-        .times(1 - slippageDecimal)
-        .toFixed(0)
-    )
-  );
   const sellTx = await sellInstructions(
     provider,
     payer.publicKey,
     new PublicKey(caAddr),
-    globalAccount.feeRecipient,
+    PUMP_FEE_RECEIPENT,
     BigInt(sellAmount),
     BigInt(Number(minSolOutput) * LAMPORTS_PER_SOL)
   );
