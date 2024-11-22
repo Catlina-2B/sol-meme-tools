@@ -57,10 +57,10 @@ export const createAndBuy = async ({
     buyAmount,
     slippageDecimal
   );
-  
+
   const microLamports = priorityFeeInSol * 1_000_000_000;
   const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
-    microLamports,
+    microLamports
   });
 
   const transaction = new Transaction();
@@ -109,14 +109,14 @@ export const buy = async ({
       buyAmount,
       slippageDecimal
     );
-  } catch(err) {
-    console.error("buySPLInstructions error", err);
+  } catch (err) {
+    console.error('buySPLInstructions error', err);
     return Promise.reject(err);
   }
 
   const microLamports = priorityFeeInSol * 1_000_000_000;
   const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
-    microLamports,
+    microLamports
   });
 
   const transaction = new Transaction();
@@ -126,7 +126,7 @@ export const buy = async ({
   try {
     const result = await connection.simulateTransaction(transaction, [payer]);
     if (result.value.err) {
-      console.error("simulateTransaction error", result.value.err);
+      console.error('simulateTransaction error', result.value.err);
       return Promise.reject(result.value.err);
     }
   } catch (e) {
@@ -142,9 +142,9 @@ export const sell = async ({
   caAddr,
   sellAmount, // 要卖的数量
   solPrice, // meme单价
-  slippageDecimal,  // 滑点
+  slippageDecimal, // 滑点
   priorityFeeInSol, // 优先费用
-  rpcUrl  // rpc地址
+  rpcUrl // rpc地址
 }: {
   payer: Keypair;
   caAddr: string;
@@ -168,7 +168,7 @@ export const sell = async ({
 
   const microLamports = priorityFeeInSol * 1_000_000_000;
   const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
-    microLamports,
+    microLamports
   });
 
   const transaction = new Transaction();
@@ -251,6 +251,7 @@ export const sellSPLInstructions = async (
   const minSolOutput = Math.floor(
     Number(
       new BigNumber(sellAmount)
+        .div(10 ** 6)
         .times(solPrice)
         .times(LAMPORTS_PER_SOL)
         .times(1 - slippageDecimal)
