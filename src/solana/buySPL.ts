@@ -143,12 +143,7 @@ export const sell = async ({
 }) => {
   const connection = new Connection(rpcUrl);
   const provider = new AnchorProvider(connection, new Wallet(payer));
-  const sellTx = await sellSPLInstructions(
-    provider,
-    payer,
-    caAddr,
-    sellAmount
-  );
+  const sellTx = await sellSPLInstructions(provider, payer, caAddr, sellAmount);
 
   const microLamports = priorityFeeInSol * 1_000_000_000;
   const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
@@ -162,26 +157,43 @@ export const sell = async ({
   return await signTxAndSend(connection, transaction, [payer]);
 };
 
+// export const signTxAndSend = async (
+//   connection: Connection,
+//   transaction: Transaction,
+//   signers: Keypair[]
+// ) => {
+//   return new Promise(async (resolve, reject) => {
+//     const tx = await sendAndConfirmTransaction(
+//       connection,
+//       transaction,
+//       signers
+//     );
+//     connection.onSignature(tx, async (result, context) => {
+//       if (result.err) {
+//         console.error(result.err);
+//         return reject(result.err);
+//       } else {
+//         return resolve(result);
+//       }
+//     });
+//   });
+// };
+
 export const signTxAndSend = async (
   connection: Connection,
   transaction: Transaction,
   signers: Keypair[]
 ) => {
-  return new Promise(async (resolve, reject) => {
-    const tx = await sendAndConfirmTransaction(
-      connection,
-      transaction,
-      signers
-    );
-    connection.onSignature(tx, async (result, context) => {
-      if (result.err) {
-        console.error(result.err);
-        return reject(result.err);
-      } else {
-        return resolve(result);
-      }
+  try {
+    // Send and confirm the transaction directly
+    return sendAndConfirmTransaction(connection, transaction, signers, {
+      commitment: 'confirmed',
+      preflightCommitment: 'processed'
     });
-  });
+  } catch (err) {
+    console.error('Transaction failed', err);
+    throw err;
+  }
 };
 
 export const buySPLInstructions = async (
@@ -216,7 +228,7 @@ export const sellSPLInstructions = async (
   payer: Keypair,
   caAddr: string, // 要卖的合约地址
   sellAmount: string, // 要卖的数量
-  minSolOutput: string = '0.00001' // meme单价
+  minSolOutput: string = '0.000000001' // meme单价
 ) => {
   const sellTx = await sellInstructions(
     provider,

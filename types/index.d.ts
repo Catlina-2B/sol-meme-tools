@@ -12,19 +12,21 @@ export interface CreateAndBuyParams {
   rpcUrl: string;
 }
 
-export interface BuyParams {
+interface BuyParams {
   payer: Keypair;
   caAddr: string;
   buyAmount: string;
+  priorityFeeInSol: number;
   slippageDecimal: number;
   rpcUrl: string;
 }
 
-export interface SellParams {
+interface SellParams {
   payer: Keypair;
   caAddr: string;
   sellAmount: string;
   solPrice: string;
+  priorityFeeInSol: number;
   slippageDecimal: number;
   rpcUrl: string;
 }
