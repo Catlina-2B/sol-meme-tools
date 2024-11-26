@@ -71,7 +71,10 @@ export const createAndBuy = async ({
   transaction.add(addPriorityFee);
 
   try {
-    const result = await connection.simulateTransaction(transaction, [payer]);
+    const result = await connection.simulateTransaction(transaction, [
+      payer,
+      mint
+    ]);
     if (result.value.err) {
       console.error(result.value.err);
       return Promise.reject(result.value.err);
